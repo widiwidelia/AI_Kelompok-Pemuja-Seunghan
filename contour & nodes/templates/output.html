@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Image Processing Output</title>
+</head>
+<body>
+    <h1>Image Processing Output</h1>
+    <h2>Contour Image:</h2>
+    <img src="{{ contour_image_path }}" alt="Contour Image">
+    <h2>Annotated Image:</h2>
+    <img src="{{ annotated_image_path }}" alt="Annotated Image">
+    <h2>Shortest Paths:</h2>
+    <img src="{{ path_image_path }}" alt="Shortest Paths">
+    <ul>
+    {% for path, value in shortest_paths.items() %}
+        <li>{{ path }}: {{ value }}</li>
+    {% endfor %}
+    </ul>
+</body>
+</html>
