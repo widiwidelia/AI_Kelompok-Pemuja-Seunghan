@@ -1,0 +1,183 @@
+<!-- templates/index.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <!-- <link rel="stylesheet" href="style.css"> -->
+    <title>Shortest Path Finder</title>
+    <style>
+        canvas {
+    border: 3px solid white;
+    background-color: antiquewhite;
+
+}
+html { 
+        display: grid;
+        place-items: center;
+        background: linear-gradient(rgba(255, 255, 255, 1) 0%, rgba(251, 251, 251, 0.1) 100%), linear-gradient(90deg, #84d2ff, #8d5acd);
+        font-family: "Inter UI","SF Pro Display",-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Oxygen,Ubuntu,Cantarell,"Open Sans","Helvetica Neue",sans-serif;;
+}
+h1 {
+    font-size: 70px;
+    font-weight: 600;
+    background-image: linear-gradient(to left, #553c9a, #b393d3);
+    color: transparent;
+    background-clip: text;
+    -webkit-background-clip: text;
+    text-align: center;
+  }
+
+h3{
+    text-align: center;
+    color: #b393d3;
+}
+
+/* CSS */
+.button{
+  background-image: linear-gradient(92.88deg, #455EB5 9.16%, #5643CC 43.89%, #673FD7 64.72%);
+  border-radius: 8px;
+  border-style: none;
+  box-sizing: border-box;
+  color: #FFFFFF;
+  cursor: pointer;
+  flex-shrink: 0;
+  
+  font-size: 16px;
+  font-weight: 500;
+  height: 2.5rem;
+  padding: 0 1.6rem;
+  text-align: center;
+  text-shadow: rgba(0, 0, 0, 0.25) 0 3px 8px;
+  transition: all .5s;
+  user-select: none;
+  -webkit-user-select: none;
+  touch-action: manipulation;
+  margin: 10px;
+}
+
+.button:hover {
+  box-shadow: rgba(80, 63, 205, 0.5) 0 1px 30px;
+  transition-duration: .1s;
+}
+
+@media (min-width: 768px) {
+  .button-36 {
+    padding: 0 2.6rem;
+  }
+}
+
+    </style>
+</head>
+<body>
+    <h1>Shortest Path Finder</h1>
+    <h3>Kelompok Pemuja Seunghan</h3>
+    <!-- <div class="nyoba"> -->
+    <form id="uploadForm">
+        <label for="image">Upload Image:</label>
+        <input type="file" id="image" name="image" accept="image/*" required>
+        <br>
+        <input type="submit" value="Upload" class="button">
+    </form>
+    <div id="nodeForm" style="display:none;">
+        <form id="pathForm">
+            <label for="start">Start Node:</label>
+            <input type="text" id="start" name="start" required>
+            <br>
+            <label for="end">End Node:</label>
+            <input type="text" id="end" name="end" required>
+            <br>
+            <label for="nodes">Required Nodes (comma-separated):</label>
+            <input type="text" id="nodes" name="nodes" required>
+            <br>
+            <input type="submit" value="Find Path"class="button">
+        </form>
+    </div>
+    <div id="result"></div>
+    <canvas id="mapCanvas" width="1000" height="1000"></canvas>
+    <script>
+        document.getElementById('uploadForm').addEventListener('submit', function(event) {
+            event.preventDefault();
+            const formData = new FormData();
+            const fileInput = document.getElementById('image');
+            formData.append('image', fileInput.files[0]);
+
+            fetch('/upload', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.error) {
+                    alert(data.error);
+                } else {
+                    document.getElementById('nodeForm').style.display = 'block';
+                    const img = new Image();
+                    img.src = data.labeled_image_path;
+                    img.onload = function() {
+                        const canvas = document.getElementById('mapCanvas');
+                        const ctx = canvas.getContext('2d');
+                        ctx.drawImage(img, 0, 0);
+                    };
+                    window.graph = data.graph;
+                    window.nodes = data.nodes;
+                }
+            })
+            .catch(error => console.error('Error:', error));
+        });
+
+        document.getElementById('pathForm').addEventListener('submit', function(event) {
+            event.preventDefault();
+            const start = document.getElementById('start').value;
+            const end = document.getElementById('end').value;
+            const nodes = document.getElementById('nodes').value.split(',').map(node => node.trim());
+
+            fetch('/find_path', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    graph: window.graph,
+                    nodes: window.nodes,
+                    start: start,
+                    end: end,
+                    required_nodes: nodes
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.error) {
+                    alert(data.error);
+                } else {
+                    document.getElementById('result').innerText = `Shortest path: ${data.path.join(' -> ')} with a distance of ${data.distance} meters`;
+                    drawPath(data.path_coordinates);
+                }
+            })
+            .catch(error => console.error('Error:', error));
+        });
+
+        function drawPath(pathCoordinates) {
+            const canvas = document.getElementById('mapCanvas');
+            const ctx = canvas.getContext('2d');
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            const img = new Image();
+            img.src = canvas.toDataURL();
+            img.onload = function() {
+                ctx.drawImage(img, 0, 0);
+                ctx.strokeStyle = 'red';
+                ctx.lineWidth = 3;
+                ctx.beginPath();
+                pathCoordinates.forEach((node, index) => {
+                    if (index === 0) {
+                        ctx.moveTo(node.x, node.y);
+                    } else {
+                        ctx.lineTo(node.x, node.y);
+                    }
+                });
+                ctx.stroke();
+            };
+        }
+    </script>
+</body>
+</html>
